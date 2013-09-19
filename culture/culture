@@ -1,0 +1,136 @@
+#!/usr/bin/env ruby
+#
+# Culture
+# Christian Koch <cfkoch@sdf.lonestar.org>
+#
+
+require 'rubygems'
+require 'sdl'
+require 'optparse'
+
+class Integer
+  def rollover!(min, max)
+    return min if self >= max
+    return max if self <= min
+    return self
+  end
+end
+
+class Culture
+  attr_accessor :r, :g, :b, :x, :y
+
+  def initialize(width, height)
+    @width = width
+    @height = height
+    @r, @g, @b = rand(255), rand(255), rand(255)
+    @x, @y = rand(@width), rand(@height)
+  end
+
+  def sign_flip
+    return (rand(2) == 0) ? 1 : -1
+  end
+
+  def new_color
+    @r += (rand(3) * sign_flip)
+    @g += (rand(3) * sign_flip)
+    @b += (rand(3) * sign_flip)
+    @r = @r.rollover!(0, 255)
+    @g = @g.rollover!(0, 255)
+    @b = @b.rollover!(0, 255)
+  end
+
+  def new_coords
+    @x += sign_flip
+    @y += sign_flip
+    @x = @x.rollover!(0, @width)
+    @y = @y.rollover!(0, @height)
+  end
+end
+
+class CultureDemo
+  DEFAULT_WIDTH = 640
+  DEFAULT_HEIGHT = 360
+  DEFAULT_FPS = 60
+  DEFAULT_NCULTURES = 15
+
+  attr_accessor :fullscreen
+
+  def initialize(width, height, fps, ncultures)
+    @width = width || DEFAULT_WIDTH
+    @height = height || DEFAULT_HEIGHT
+    @delay = 1000 / (fps || DEFAULT_FPS)
+    @fullscreen = false
+    @cultures = Array.new(ncultures || DEFAULT_NCULTURES)
+    @cultures.length.times { |n|
+      @cultures[n] = Culture.new(@width, @height)
+    }
+  end
+
+  def go!
+    setup_screen
+    SDL::Mouse.hide
+    main_loop
+  end
+
+  private
+
+  def setup_screen
+    flags = SDL::SWSURFACE
+    flags |= SDL::FULLSCREEN if @fullscreen
+    @screen = SDL::Screen.open(@width, @height, 0, flags)
+    @screen.fill_rect(
+      0, 0, @screen.w, @screen.h, @screen.format.map_rgb(0, 0, 0)
+    )
+  end
+
+  def main_loop
+    loop do
+      @event = SDL::Event.poll
+
+      case @event
+      when SDL::Event::Quit, SDL::Event::KeyDown
+        break
+      end
+      
+      draw_frame
+      SDL.delay(@delay)
+    end
+  end
+
+  def draw_frame
+    @cultures.each do |culture|
+      culture.new_color
+      culture.new_coords
+      @screen.put_pixel(
+        culture.x, culture.y,
+        @screen.format.map_rgb(culture.r, culture.g, culture.b)
+      )
+      @screen.update_rect(culture.x, culture.y, 1, 1)
+    end
+  end
+end
+
+#####
+
+options = {
+  :width => nil,
+  :height => nil,
+  :fps => nil,
+  :ncultures => nil,
+  :fullscreen => nil,
+}
+
+parser = OptionParser.new do |opts|
+  opts.on("-w WIDTH", Integer) { |w| options[:width] = w }
+  opts.on("-h HEIGHT", Integer) { |h| options[:height] = h }
+  opts.on("-f FPS", Integer) { |f| options[:fps] = f }
+  opts.on("-n CULTURES", Integer) { |n| options[:ncultures] = n }
+  opts.on("-F", "Fullscreen") { options[:fullscreen] = true }
+end
+parser.parse!
+
+c = CultureDemo.new(
+  options[:width], options[:height], options[:fps], options[:ncultures]
+)
+c.fullscreen = options[:fullscreen]
+c.go!
