@@ -81,6 +81,7 @@ class CultureDemo
     @screen.fill_rect(
       0, 0, @screen.w, @screen.h, @screen.format.map_rgb(0, 0, 0)
     )
+    SDL::WM.set_caption("culture", "") if not @fullscreen
   end
 
   def main_loop
