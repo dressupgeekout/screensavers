@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 #
 # Culture
-# Christian Koch <cfkoch@sdf.lonestar.org>
+# Charlotte Koch <cfkoch@edgebsd.org>
 #
 
 require 'rubygems'
